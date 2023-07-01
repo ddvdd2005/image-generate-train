@@ -172,16 +172,16 @@ total_number_generated_images = 10
 coco_train = build_coco_json()
 annotation_id = 1
 image_id = 1
-os.mkdir("datasets/train")
-os.mkdir("datasets/val")
+pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
+pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
 for _ in range(round(0.8 * total_number_generated_images)):
-    get_full_image("./datasets/train/", image_id, coco_train)
+    get_full_image("./datasets/images/train/", image_id, coco_train)
     image_id += 1
-with open("datasets/train.json", 'w') as outfile:
+with open("datasets/annotations/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
 for _ in range(round(0.2 * total_number_generated_images)):
-    get_full_image("./datasets/val/", image_id, coco_test)
+    get_full_image("./datasets/images/val/", image_id, coco_test)
     image_id += 1
-with open("datasets/val.json", 'w') as outfile:
+with open("datasets/annotations/val.json", 'w') as outfile:
     json.dump(coco_test, outfile)
