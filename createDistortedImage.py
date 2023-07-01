@@ -13,6 +13,7 @@ background_files = []
 for root, _, files in os.walk("./images"):
     for file in files:
         image_files.append(os.path.join(root, file))
+# background images can be downloaded here https://drive.google.com/drive/folders/1ZBaMJxZtUNHIuGj8D8v3B9Adn8dbHwSS
 for root, _, files in os.walk("./background"):
     for file in files:
         background_files.append(os.path.join(root, file))
@@ -109,10 +110,10 @@ def calculate_overlap_percentage(x1, y1, w1, h1, x2, y2, w2, h2):
 
 def get_image():
     image_choice = random.randint(0, len(image_files) - 1)
-    imageread = cv2.imread(image_files[image_choice], cv2.IMREAD_UNCHANGED)
-    # imageread = cv2.cvtColor(imageread, cv2.COLOR_BGRA2RGBA)
-    width = imageread.shape[1]
-    height = imageread.shape[0]
+    image_read = cv2.imread(image_files[image_choice], cv2.IMREAD_UNCHANGED)
+    # image_read = cv2.cvtColor(image_read, cv2.COLOR_BGRA2RGBA)
+    width = image_read.shape[1]
+    height = image_read.shape[0]
     hv = int(0.3 * height)
     wv = int(0.3 * width)
     # specifying the points in the source image which is to be transformed
@@ -139,25 +140,25 @@ def get_image():
     points2 = np.float32([[0, 0], [0, height], [width, height], [width, 0]])
     # applying getPerspectiveTransform() function to transform the perspective of the given source image to the
     # corresponding points in the destination image
-    resultimage = cv2.getPerspectiveTransform(points1, points2)
+    result_image = cv2.getPerspectiveTransform(points1, points2)
     # applying warpPerspective() function to fit the size of the resulting image from getPerspectiveTransform()
     # function to the size of source image
-    finalimage = cv2.warpPerspective(imageread, resultimage, (width, height))
+    final_image = cv2.warpPerspective(image_read, result_image, (width, height))
     if bool(random.getrandbits(1)):
         number_square = random.randint(1, 4)
-        for i in range(number_square):
+        for _ in range(number_square):
             size_square = random.uniform(0.2, 0.5)
             start_x = random.randint(0, int((1 - size_square) * width))
             start_y = random.randint(0, int((1 - size_square) * height))
             color_b = random.randint(0, 255)
             color_g = random.randint(0, 255)
             color_r = random.randint(0, 255)
-            finalimage = cv2.rectangle(finalimage, (start_x, start_y),
-                                       (int(start_x + size_square * width), int(start_y + size_square * height)),
-                                       (color_b, color_g, color_r, 255), -1)
+            final_image = cv2.rectangle(final_image, (start_x, start_y),
+                                        (int(start_x + size_square * width), int(start_y + size_square * height)),
+                                        (color_b, color_g, color_r, 255), -1)
     if bool(random.getrandbits(1)):
-        finalimage = ndimage.rotate(finalimage, random.randint(0, 360))
-    return finalimage, image_choice + 1
+        final_image = ndimage.rotate(final_image, random.randint(0, 360))
+    return final_image, image_choice + 1
 
 
 def build_coco_json():
@@ -173,13 +174,13 @@ annotation_id = 1
 image_id = 1
 os.mkdir("./distorted/train")
 os.mkdir("./distorted/test")
-for i in range(round(0.8 * total_number_generated_images)):
+for _ in range(round(0.8 * total_number_generated_images)):
     get_full_image("./distorted/train/", image_id, coco_train)
     image_id += 1
 with open("./distorted/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
-for i in range(round(0.2 * total_number_generated_images)):
+for _ in range(round(0.2 * total_number_generated_images)):
     get_full_image("./distorted/test/", image_id, coco_test)
     image_id += 1
 with open("./distorted/test.json", 'w') as outfile:
