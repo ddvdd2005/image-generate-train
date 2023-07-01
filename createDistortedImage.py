@@ -12,11 +12,13 @@ image_files = []
 background_files = []
 for root, _, files in os.walk("./images"):
     for file in files:
-        image_files.append(os.path.join(root, file))
+        if file != ".gitignore":
+            image_files.append(os.path.join(root, file))
 # background images can be downloaded here https://drive.google.com/drive/folders/1ZBaMJxZtUNHIuGj8D8v3B9Adn8dbHwSS
 for root, _, files in os.walk("./background"):
     for file in files:
-        background_files.append(os.path.join(root, file))
+        if file != ".gitignore":
+            background_files.append(os.path.join(root, file))
 image_files.sort()
 
 
@@ -169,7 +171,7 @@ def build_coco_json():
     return coco_json
 
 
-total_number_generated_images = 10
+total_number_generated_images = 5000
 coco_train = build_coco_json()
 annotation_id = 1
 image_id = 1
@@ -177,12 +179,16 @@ pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
 pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
 for _ in range(round(0.8 * total_number_generated_images)):
     get_full_image("./datasets/images/train/", image_id, coco_train)
+    if image_id % 50 == 0:
+        print(image_id)
     image_id += 1
 with open("datasets/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
 for _ in range(round(0.2 * total_number_generated_images)):
     get_full_image("./datasets/images/val/", image_id, coco_test)
+    if image_id % 50 == 0:
+        print(image_id)
     image_id += 1
 with open("datasets/val.json", 'w') as outfile:
     json.dump(coco_test, outfile)
