@@ -6,7 +6,7 @@ import os
 import random
 from random import randint
 from scipy import ndimage
-from PIL import Image
+from PIL import Image, ImageOps
 
 image_files = []
 background_files = []
@@ -74,6 +74,7 @@ def get_full_image(folder, image_nbr, coco_json):
                                          "segmentation": [[x, y, x, y + height, x + width, y + height, x + width, y]],
                                          "category_id": category_id})
         annotation_id += 1
+    bg_image = ImageOps.expand(bg_image, (20, 120))
     cv2.imwrite(f"{folder}{image_nbr:06d}.png", np.asarray(bg_image))
 
 
@@ -177,11 +178,11 @@ pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
 for _ in range(round(0.8 * total_number_generated_images)):
     get_full_image("./datasets/images/train/", image_id, coco_train)
     image_id += 1
-with open("datasets/annotations/train.json", 'w') as outfile:
+with open("datasets/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
 for _ in range(round(0.2 * total_number_generated_images)):
     get_full_image("./datasets/images/val/", image_id, coco_test)
     image_id += 1
-with open("datasets/annotations/val.json", 'w') as outfile:
+with open("datasets/val.json", 'w') as outfile:
     json.dump(coco_test, outfile)
