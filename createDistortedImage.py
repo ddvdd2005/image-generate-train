@@ -173,7 +173,7 @@ coco_train = build_coco_json()
 annotation_id = 1
 image_id = 1
 os.mkdir("./distorted/train")
-os.mkdir("./distorted/test")
+os.mkdir("distorted/val")
 for _ in range(round(0.8 * total_number_generated_images)):
     get_full_image("./distorted/train/", image_id, coco_train)
     image_id += 1
@@ -181,7 +181,7 @@ with open("./distorted/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
 for _ in range(round(0.2 * total_number_generated_images)):
-    get_full_image("./distorted/test/", image_id, coco_test)
+    get_full_image("./distorted/val/", image_id, coco_test)
     image_id += 1
-with open("./distorted/test.json", 'w') as outfile:
+with open("distorted/val.json", 'w') as outfile:
     json.dump(coco_test, outfile)
