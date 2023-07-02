@@ -3,23 +3,24 @@ import shutil
 import json
 from ultralytics import YOLO
 
-convert_coco(labels_dir='datasets/', cls91to80=False)
-with open("datasets/train.json", "r") as f:
-    coco_json = json.load(f)
-yaml_content = """path: ./
+# Train the model
+if __name__ == "__main__":
+    convert_coco(labels_dir='datasets/', cls91to80=False)
+    with open("datasets/train.json", "r") as f:
+        coco_json = json.load(f)
+    yaml_content = """path: ./
 train: images/train
 val: images/val
 names:
 """
-for subclass in coco_json["categories"]:
-    yaml_content += f"  {subclass['id']-1}: {subclass['name']}\n"
-with open("./yolo_labels/train.yaml", "w") as f:
-    f.write(yaml_content)
+    for subclass in coco_json["categories"]:
+        yaml_content += f"  {subclass['id']-1}: {subclass['name']}\n"
+    with open("./yolo_labels/train.yaml", "w") as f:
+        f.write(yaml_content)
 
-shutil.move("./yolo_labels/labels", "./datasets/labels")
+    shutil.rmtree("./datasets/labels", ignore_errors=True)
+    shutil.move("./yolo_labels/labels", "./datasets/labels")
 
-# Load a model
-model = YOLO('yolov8n.pt')  # load a pretrained model (recommended for training)
-
-# Train the model
-model.train(data='./yolo_labels/train.yaml', epochs=100, imgsz=640)
+    # Load a model
+    model = YOLO('yolov8l.pt')  # load a pretrained model (recommended for training)
+    model.train(data='./yolo_labels/train.yaml', epochs=100, imgsz=640, save_period=5, batch=8, plots=True)
