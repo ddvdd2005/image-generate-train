@@ -1,4 +1,5 @@
 import json
+import multiprocessing
 import pathlib
 import cv2
 import numpy as np
@@ -25,7 +26,9 @@ if len(background_files) == 0:
 image_files.sort()
 
 
-def get_full_image(folder, image_nbr, coco_json, annotation_id):
+def get_full_image(folder, image_nbr, coco_json, annotation_id, annotation_lock):
+    if image_nbr % 50 == 0:
+        print(image_nbr)
     coco_json["images"].append({"file_name": f"{image_nbr:06d}.png", "height": 400, "width": 600, "id": image_nbr})
     bg_image = cv2.imread(random.choice(background_files), cv2.IMREAD_UNCHANGED)
     bg_image = cv2.resize(bg_image, (600, 400), interpolation=cv2.INTER_AREA)
@@ -69,15 +72,18 @@ def get_full_image(folder, image_nbr, coco_json, annotation_id):
                 if overlap <= 30:
                     break
         bg_image.paste(anno_image, (x, y), anno_image)
+        annotation_lock.acquire()
+        annotation_id_value = annotation_id.value
+        annotation_id.value += 1
+        annotation_lock.release()
         coco_json["annotations"].append({"image_id": image_nbr,
                                          "bbox": [x, y, width, height],
                                          "area": width * height,
                                          "iscrowd": 0,
                                          "ignore": 0,
-                                         "id": annotation_id,
+                                         "id": annotation_id_value,
                                          "segmentation": [[x, y, x, y + height, x + width, y + height, x + width, y]],
                                          "category_id": category_id})
-        annotation_id += 1
     bg_image = ImageOps.expand(bg_image, (20, 120))
     cv2.imwrite(f"{folder}{image_nbr:06d}.png", np.asarray(bg_image))
 
@@ -166,31 +172,60 @@ def get_image():
     return final_image, image_choice + 1
 
 
-def build_coco_json():
-    coco_json = {"categories": [], "images": [], "annotations": []}
+def build_coco_json(coco_json, manager):
+    coco_json["categories"] = manager.list()
+    coco_json["images"] = manager.list()
+    coco_json["annotations"] = manager.list()
     for i in range(len(image_files)):
         coco_json["categories"].append({"supercategory": "none", "id": i+1, "name": pathlib.Path(image_files[i]).stem})
     return coco_json
 
 
-total_number_generated_images = 500
-coco_train = build_coco_json()
-annotation_id = 1
-image_id = 1
-pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
-pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
-for _ in range(round(0.8 * total_number_generated_images)):
-    get_full_image("./datasets/images/train/", image_id, coco_train, annotation_id)
-    if image_id % 50 == 0:
-        print(image_id)
-    image_id += 1
-with open("datasets/train.json", 'w') as outfile:
-    json.dump(coco_train, outfile)
-coco_test = build_coco_json()
-for _ in range(round(0.2 * total_number_generated_images)):
-    get_full_image("./datasets/images/val/", image_id, coco_test, annotation_id)
-    if image_id % 50 == 0:
-        print(image_id)
-    image_id += 1
-with open("datasets/val.json", 'w') as outfile:
-    json.dump(coco_test, outfile)
+def main():
+    pool = multiprocessing.Pool()
+    manager = multiprocessing.Manager()
+    total_number_generated_images = 500
+    coco_train = manager.dict({})
+    coco_train = build_coco_json(coco_train, manager)
+    annotation_lock = manager.Lock()
+    image_lock = manager.Lock()
+    annotation_id = manager.Value("i", 1)
+    image_id = manager.Value("i", 1)
+    pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
+    pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
+    for _ in range(round(0.8 * total_number_generated_images)):
+        image_lock.acquire()
+        image_id_value = image_id.value
+        image_id.value += 1
+        image_lock.release()
+        pool.apply_async(get_full_image, args=("./datasets/images/train/", image_id_value,
+                                               coco_train, annotation_id, annotation_lock))
+    pool.close()
+    pool.join()
+    with open("datasets/train.json", 'w') as outfile:
+        coco_train_2 = {}
+        for k, v in coco_train.copy().items():
+            coco_train_2[k] = v[:]
+        json.dump(coco_train_2, outfile)
+    del pool
+    pool = multiprocessing.Pool()
+    coco_test = manager.dict({})
+    coco_test = build_coco_json(coco_test, manager)
+    for _ in range(round(0.2 * total_number_generated_images)):
+        image_lock.acquire()
+        image_id_value = image_id.value
+        image_id.value += 1
+        image_lock.release()
+        pool.apply_async(get_full_image, args=("./datasets/images/val/", image_id_value,
+                                               coco_test, annotation_id, annotation_lock))
+    pool.close()
+    pool.join()
+    with open("datasets/val.json", 'w') as outfile:
+        coco_test_2 = {}
+        for k, v in coco_test.copy().items():
+            coco_test_2[k] = v[:]
+        json.dump(coco_test_2, outfile)
+
+
+if __name__ == "__main__":
+    main()
