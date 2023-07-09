@@ -22,5 +22,5 @@ names:
     shutil.move("./yolo_labels/labels", "./datasets/labels")
 
     # Load a model
-    model = YOLO('yolov8l.pt')  # load a pretrained model (recommended for training)
-    model.train(data='./yolo_labels/train.yaml', epochs=100, imgsz=640, save_period=5, batch=8, plots=True)
+    model = YOLO('yolov8n.pt')  # load a pretrained model (recommended for training)
+    model.train(data='./yolo_labels/train.yaml', epochs=100, imgsz=640, save_period=3, batch=8, plots=True)

@@ -14,15 +14,18 @@ for root, _, files in os.walk("./images"):
     for file in files:
         if file != ".gitignore":
             image_files.append(os.path.join(root, file))
-# background images can be downloaded here https://drive.google.com/drive/folders/1ZBaMJxZtUNHIuGj8D8v3B9Adn8dbHwSS
 for root, _, files in os.walk("./background"):
     for file in files:
         if file != ".gitignore":
             background_files.append(os.path.join(root, file))
+if len(background_files) == 0:
+    print("background images can be downloaded here "
+          "https://drive.google.com/drive/folders/1ZBaMJxZtUNHIuGj8D8v3B9Adn8dbHwSS")
+    raise Exception("No background images found")
 image_files.sort()
 
 
-def get_full_image(folder, image_nbr, coco_json):
+def get_full_image(folder, image_nbr, coco_json, annotation_id):
     coco_json["images"].append({"file_name": f"{image_nbr:06d}.png", "height": 400, "width": 600, "id": image_nbr})
     bg_image = cv2.imread(random.choice(background_files), cv2.IMREAD_UNCHANGED)
     bg_image = cv2.resize(bg_image, (600, 400), interpolation=cv2.INTER_AREA)
@@ -41,9 +44,9 @@ def get_full_image(folder, image_nbr, coco_json):
             width = anno_image.shape[1]
             height = anno_image.shape[0]
             if nbr_images == 1:
-                ratio = random.uniform(0.4, 0.8)
+                ratio = random.uniform(0.1, 0.8)
             else:
-                ratio = random.uniform(0.4, 0.8)
+                ratio = random.uniform(0.1, 0.6)
             if width / 600 > height / 400:
                 width, height = int(ratio * 600), int(height * ratio * 600 / width)
             else:
@@ -66,7 +69,6 @@ def get_full_image(folder, image_nbr, coco_json):
                 if overlap <= 30:
                     break
         bg_image.paste(anno_image, (x, y), anno_image)
-        global annotation_id
         coco_json["annotations"].append({"image_id": image_nbr,
                                          "bbox": [x, y, width, height],
                                          "area": width * height,
@@ -117,8 +119,8 @@ def get_image():
     # image_read = cv2.cvtColor(image_read, cv2.COLOR_BGRA2RGBA)
     width = image_read.shape[1]
     height = image_read.shape[0]
-    hv = int(0.3 * height)
-    wv = int(0.3 * width)
+    hv = int(0.6 * height)
+    wv = int(0.6 * width)
     # specifying the points in the source image which is to be transformed
     # to the corresponding points in the destination image
     locks = random.sample([1, 2, 3, 4], 2)
@@ -171,14 +173,14 @@ def build_coco_json():
     return coco_json
 
 
-total_number_generated_images = 5000
+total_number_generated_images = 500
 coco_train = build_coco_json()
 annotation_id = 1
 image_id = 1
 pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
 pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
 for _ in range(round(0.8 * total_number_generated_images)):
-    get_full_image("./datasets/images/train/", image_id, coco_train)
+    get_full_image("./datasets/images/train/", image_id, coco_train, annotation_id)
     if image_id % 50 == 0:
         print(image_id)
     image_id += 1
@@ -186,7 +188,7 @@ with open("datasets/train.json", 'w') as outfile:
     json.dump(coco_train, outfile)
 coco_test = build_coco_json()
 for _ in range(round(0.2 * total_number_generated_images)):
-    get_full_image("./datasets/images/val/", image_id, coco_test)
+    get_full_image("./datasets/images/val/", image_id, coco_test, annotation_id)
     if image_id % 50 == 0:
         print(image_id)
     image_id += 1
