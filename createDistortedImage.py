@@ -155,7 +155,7 @@ def get_image():
     # applying warpPerspective() function to fit the size of the resulting image from getPerspectiveTransform()
     # function to the size of source image
     final_image = cv2.warpPerspective(image_read, result_image, (width, height))
-    if bool(random.getrandbits(1)):
+    if random.random() >= 0.7:
         number_square = random.randint(1, 4)
         for _ in range(number_square):
             size_square = random.uniform(0.2, 0.5)
@@ -184,7 +184,7 @@ def build_coco_json(coco_json, manager):
 def main():
     pool = multiprocessing.Pool()
     manager = multiprocessing.Manager()
-    total_number_generated_images = 500
+    total_number_generated_images = 100000
     coco_train = manager.dict({})
     coco_train = build_coco_json(coco_train, manager)
     annotation_lock = manager.Lock()

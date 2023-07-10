@@ -28,7 +28,7 @@ for file in images_file_path:
 table_results = np.zeros((len(models), len(images)), dtype=np.uint8)
 i = 0
 for model in models:
-    results = model(images)
+    results = model(images, conf=0.05)
     j = 0
     for result in results:
         table_results[i, j] = result.boxes.cls.cpu().numpy().size
