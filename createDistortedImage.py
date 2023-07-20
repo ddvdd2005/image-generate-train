@@ -8,6 +8,7 @@ import random
 from random import randint
 from scipy import ndimage
 from PIL import Image, ImageOps
+import shutil
 
 image_files = []
 background_files = []
@@ -61,7 +62,17 @@ def get_full_image(folder, image_nbr, coco_json, annotation_id, annotation_lock)
             min_y = int(0 - height / 3)
             max_y = int(400 - 2 * height / 3)
             x = int(random.uniform(min_x, max_x))
+            if x < 0:
+                width = width + x
+                x = 0
+            if (x + width) > 600:
+                width = 600 - x
             y = int(random.uniform(min_y, max_y))
+            if y < 0:
+                height = height + y
+                y = 0
+            if (y + height) > 400:
+                height = 400 - y
             if i == 0 and nbr_images == 1:
                 break
             if i == 0 and nbr_images == 2:
@@ -77,13 +88,18 @@ def get_full_image(folder, image_nbr, coco_json, annotation_id, annotation_lock)
         annotation_id.value += 1
         annotation_lock.release()
         coco_json["annotations"].append({"image_id": image_nbr,
-                                         "bbox": [x, y, width, height],
+                                         "bbox": [x + 20, y + 120, width, height],
                                          "area": width * height,
                                          "iscrowd": 0,
                                          "ignore": 0,
                                          "id": annotation_id_value,
-                                         "segmentation": [[x, y, x, y + height, x + width, y + height, x + width, y]],
+                                         "segmentation": [[x + 20, y + 120, x + 20, y + height + 120, x + width + 20,
+                                                           y + height + 120, x + width + 20, y + 120]],
                                          "category_id": category_id})
+    if bool(random.getrandbits(1)):
+        underwater_color = (random.randint(60, 80), random.randint(155, 175), 255, 0)
+        bg_image = Image.blend(bg_image, Image.new('RGBA', (600, 400), underwater_color),
+                               alpha=random.uniform(0.15, 0.25))
     bg_image = ImageOps.expand(bg_image, (20, 120))
     cv2.imwrite(f"{folder}{image_nbr:06d}.png", np.asarray(bg_image))
 
@@ -191,18 +207,18 @@ def main():
     image_lock = manager.Lock()
     annotation_id = manager.Value("i", 1)
     image_id = manager.Value("i", 1)
-    pathlib.Path("datasets/images/train").mkdir(exist_ok=True, parents=True)
-    pathlib.Path("datasets/images/val").mkdir(exist_ok=True, parents=True)
+    pathlib.Path("./temp/images/train").mkdir(exist_ok=True, parents=True)
+    pathlib.Path("./temp/images/val").mkdir(exist_ok=True, parents=True)
     for _ in range(round(0.8 * total_number_generated_images)):
         image_lock.acquire()
         image_id_value = image_id.value
         image_id.value += 1
         image_lock.release()
-        pool.apply_async(get_full_image, args=("./datasets/images/train/", image_id_value,
+        pool.apply_async(get_full_image, args=("./temp/images/train/", image_id_value,
                                                coco_train, annotation_id, annotation_lock))
     pool.close()
     pool.join()
-    with open("datasets/train.json", 'w') as outfile:
+    with open("./temp/train.json", 'w') as outfile:
         coco_train_2 = {}
         for k, v in coco_train.copy().items():
             coco_train_2[k] = v[:]
@@ -216,15 +232,21 @@ def main():
         image_id_value = image_id.value
         image_id.value += 1
         image_lock.release()
-        pool.apply_async(get_full_image, args=("./datasets/images/val/", image_id_value,
+        pool.apply_async(get_full_image, args=("./temp/images/val/", image_id_value,
                                                coco_test, annotation_id, annotation_lock))
     pool.close()
     pool.join()
-    with open("datasets/val.json", 'w') as outfile:
+    with open("./temp/val.json", 'w') as outfile:
         coco_test_2 = {}
         for k, v in coco_test.copy().items():
             coco_test_2[k] = v[:]
         json.dump(coco_test_2, outfile)
+    shutil.rmtree("./datasets/labels/", ignore_errors=True)
+    shutil.rmtree("./datasets/images/", ignore_errors=True)
+    shutil.move("./temp/images", "./datasets/images")
+    os.rename("./temp/train.json", "./datasets/train.json")
+    os.rename("./temp/val.json", "./datasets/val.json")
+    shutil.rmtree("./temp/")
 
 
 if __name__ == "__main__":
