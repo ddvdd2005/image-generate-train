@@ -30,7 +30,7 @@ image_files.sort()
 def get_full_image(folder, image_nbr, coco_json, annotation_id, annotation_lock):
     if image_nbr % 50 == 0:
         print(image_nbr)
-    coco_json["images"].append({"file_name": f"{image_nbr:06d}.png", "height": 400, "width": 600, "id": image_nbr})
+    coco_json["images"].append({"file_name": f"{image_nbr:06d}.png", "height": 640, "width": 640, "id": image_nbr})
     bg_image = cv2.imread(random.choice(background_files), cv2.IMREAD_UNCHANGED)
     bg_image = cv2.resize(bg_image, (600, 400), interpolation=cv2.INTER_AREA)
     random_nbr = random.random()
@@ -97,8 +97,8 @@ def get_full_image(folder, image_nbr, coco_json, annotation_id, annotation_lock)
                                                            y + height + 120, x + width + 20, y + 120]],
                                          "category_id": category_id})
     if bool(random.getrandbits(1)):
-        underwater_color = (random.randint(60, 80), random.randint(155, 175), 255, 0)
-        bg_image = Image.blend(bg_image, Image.new('RGBA', (600, 400), underwater_color),
+        underwater_color = (random.randint(60, 80), random.randint(155, 175), 255)
+        bg_image = Image.blend(bg_image, Image.new('RGB', (600, 400), underwater_color),
                                alpha=random.uniform(0.15, 0.25))
     bg_image = ImageOps.expand(bg_image, (20, 120))
     cv2.imwrite(f"{folder}{image_nbr:06d}.png", np.asarray(bg_image))
@@ -200,7 +200,7 @@ def build_coco_json(coco_json, manager):
 def main():
     pool = multiprocessing.Pool()
     manager = multiprocessing.Manager()
-    total_number_generated_images = 100000
+    total_number_generated_images = 1000
     coco_train = manager.dict({})
     coco_train = build_coco_json(coco_train, manager)
     annotation_lock = manager.Lock()
@@ -244,6 +244,14 @@ def main():
     shutil.rmtree("./datasets/labels/", ignore_errors=True)
     shutil.rmtree("./datasets/images/", ignore_errors=True)
     shutil.move("./temp/images", "./datasets/images")
+    try:
+        os.remove("./datasets/train.json")
+    except FileNotFoundError:
+        pass
+    try:
+        os.remove("./datasets/val.json")
+    except FileNotFoundError:
+        pass
     os.rename("./temp/train.json", "./datasets/train.json")
     os.rename("./temp/val.json", "./datasets/val.json")
     shutil.rmtree("./temp/")

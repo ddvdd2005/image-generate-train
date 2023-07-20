@@ -78,4 +78,5 @@ fabric.properties
 
 /yolo_labels
 /runs
+/temp
 *.pt
