@@ -5,19 +5,19 @@ The main difficulties with this project is the Xavier being a bottleneck for inf
 
 ## Files in this folder:
 
-createDistortedImage.py: generates images that are distorted in order to be used for a first more general level of training. Then when we are able to collect real images at the competition, we can run a fine-tuning
+**createDistortedImage.py**: generates images that are distorted in order to be used for a first more general level of training. Then when we are able to collect real images at the competition, we can run a fine-tuning
 
-infer.py: look at the results of the inference of a model on one specific image
+**infer.py**: look at the results of the inference of a model on one specific image
 
-infer_best.py: compare the results of a multitude of images on a multitude of models in order to find the best model. Prints out a table allowing us to check this information quickly
+**infer_best.py**: compare the results of a multitude of images on a multitude of models in order to find the best model. Prints out a table allowing us to check this information quickly
 
-infer_tf.py: Due to some complications with updating the Xavier to be able to use Pytorch 2 in 2023 (would have required us to update Ros), this tests that the model trained also works on tensorflow
+**infer_tf.py**: Due to some complications with updating the Xavier to be able to use Pytorch 2 in 2023 (would have required us to update Ros), this tests that the model trained also works on tensorflow
 
-onnx_to_tf.py: converts an onnx to tf for tensorflow, specifically version 1.7 of tensorflow
+**onnx_to_tf.py**: converts an onnx to tf for tensorflow, specifically version 1.7 of tensorflow
 
-pt_to_onnx.py: converts the trained model in an onnx
+**pt_to_onnx.py**: converts the trained model in an onnx
 
-train.py: the training loop
+**train.py**: the training loop
 
 ## How to achieve the best results
 
